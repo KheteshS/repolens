@@ -16,7 +16,6 @@
   "dependencies": {
     "@repo/shared": "*",
     "@repo/ui": "*",
-    "@supabase/supabase-js": "^2.105.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^1.16.0",
@@ -34,6 +33,7 @@
   },
   "devDependencies": {
     "@next/eslint-plugin-next": "^16.2.0",
+    "@prisma/client": "^7.8.0",
     "@repo/eslint-config": "*",
     "@repo/tailwind-config": "*",
     "@repo/typescript-config": "*",
@@ -44,6 +44,7 @@
     "autoprefixer": "^10.4.20",
     "eslint": "^9.39.1",
     "postcss": "^8.5.3",
+    "prisma": "^7.8.0",
     "tailwindcss": "^4.1.5",
     "typescript": "5.9.2"
   }

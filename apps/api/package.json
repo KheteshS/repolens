@@ -10,8 +10,8 @@
     "check-types": "tsc --noEmit"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.21",
     "@repo/shared": "*",
-    "@supabase/supabase-js": "^2",
     "adm-zip": "^0.5.10",
     "bullmq": "^5",
     "cors": "^2",
@@ -21,15 +21,16 @@
     "ioredis": "^5",
     "multer": "^2.1.1",
     "simple-git": "^3.36.0",
-    "ws": "^8.20.1",
-    "@google/generative-ai": "^0.21"
+    "ws": "^8.20.1"
   },
   "devDependencies": {
+    "@prisma/client": "^7.8.0",
     "@types/adm-zip": "*",
     "@types/cors": "*",
     "@types/express": "*",
     "@types/multer": "*",
     "@types/ws": "*",
+    "prisma": "^7.8.0",
     "tsx": "^4",
     "typescript": "^5"
   }
