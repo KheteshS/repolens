@@ -8,10 +8,22 @@ export interface FileNode {
   language?: String;
 }
 
-export interface DIagrams {
+export interface Diagrams {
   dependency: string;
   callGraph: string;
   architecture: string;
+}
+
+export interface Analysis {
+  id: string;
+  repoUrl?: string;
+  repoName: string;
+  summary: string;
+  techStack: string[];
+  fileTree: FileNode;
+  diagrams: Diagrams;
+  status: AnalysisStatus;
+  createdAt: string;
 }
 
 export interface ChatMessage {

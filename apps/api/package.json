@@ -1,0 +1,36 @@
+{
+  "name": "@repo/api",
+  "version": "0.0.1",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@repo/shared": "*",
+    "@supabase/supabase-js": "^2",
+    "adm-zip": "^0.5.10",
+    "bullmq": "^5",
+    "cors": "^2",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.5.2",
+    "ioredis": "^5",
+    "multer": "^2.1.1",
+    "simple-git": "^3.36.0",
+    "ws": "^8.20.1",
+    "@google/generative-ai": "^0.21"
+  },
+  "devDependencies": {
+    "@types/adm-zip": "*",
+    "@types/cors": "*",
+    "@types/express": "*",
+    "@types/multer": "*",
+    "@types/ws": "*",
+    "tsx": "^4",
+    "typescript": "^5"
+  }
+}
