@@ -1,7 +1,7 @@
 import express from "express";
 import cors from "cors";
 import rateLimit from "express-rate-limit";
-import { prisma } from "./db/prisma.js";
+import { startWorker } from "./workers/analysisWorker";
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -26,5 +26,8 @@ app.get("/health", (_req, res) => {
 app.listen(PORT, () => {
   console.log(`[API] Server running on http://localhost:${PORT}`);
 });
+
+startWorker();
+console.log("[Worker] Analysis worker started");
 
 export default app;
