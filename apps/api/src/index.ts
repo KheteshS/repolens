@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import rateLimit from "express-rate-limit";
 import { startWorker } from "./workers/analysisWorker";
+import { setupWebSocket } from "./routes/chat";
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -23,10 +24,13 @@ app.get("/health", (_req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`[API] Server running on http://localhost:${PORT}`);
   startWorker();
   console.log("[Worker] Analysis worker started");
 });
+
+setupWebSocket(server);
+console.log("[WS] Chat WebSocket ready at /ws/chat");
 
 export default app;
