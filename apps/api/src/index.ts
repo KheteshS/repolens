@@ -25,9 +25,8 @@ app.get("/health", (_req, res) => {
 
 app.listen(PORT, () => {
   console.log(`[API] Server running on http://localhost:${PORT}`);
+  startWorker();
+  console.log("[Worker] Analysis worker started");
 });
-
-startWorker();
-console.log("[Worker] Analysis worker started");
 
 export default app;
