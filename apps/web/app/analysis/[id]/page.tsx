@@ -11,6 +11,7 @@ import AnalysisReport from "@/components/AnalysisReport";
 import QuickStats from "@/components/QuickStats";
 import FileTree from "@/components/FileTree";
 import MermaidDiagram from "@/components/MermaidDiagram";
+import ChatPanel from "@/components/ChatPanel";
 
 interface TechStackCategories {
   languages: string[];
@@ -97,8 +98,18 @@ const NAV_ITEMS = [
     id: "overview",
     label: "Overview",
     icon: (
-      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+      <svg
+        className="w-4 h-4"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+        />
       </svg>
     ),
   },
@@ -106,8 +117,18 @@ const NAV_ITEMS = [
     id: "dependencies",
     label: "Dependencies",
     icon: (
-      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+      <svg
+        className="w-4 h-4"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
+        />
       </svg>
     ),
   },
@@ -115,8 +136,18 @@ const NAV_ITEMS = [
     id: "callgraph",
     label: "Call Graph",
     icon: (
-      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+      <svg
+        className="w-4 h-4"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M4 6h16M4 10h16M4 14h16M4 18h16"
+        />
       </svg>
     ),
   },
@@ -124,8 +155,18 @@ const NAV_ITEMS = [
     id: "architecture",
     label: "Architecture",
     icon: (
-      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+      <svg
+        className="w-4 h-4"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+        />
       </svg>
     ),
   },
@@ -133,8 +174,39 @@ const NAV_ITEMS = [
     id: "files",
     label: "File Tree",
     icon: (
-      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+      <svg
+        className="w-4 h-4"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
+        />
+      </svg>
+    ),
+  },
+  {
+    id: "chat",
+    label: "Chat",
+    icon: (
+      <svg
+        className="w-4 h-4"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M8 12h.01M12 12h.01M16 12h.01M21 12c0
+  4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9
+  8z"
+        />
       </svg>
     ),
   },
@@ -150,9 +222,17 @@ function parseReport(summary: string): AnalysisReportData | null {
   }
 }
 
-function parseTechStack(techStack: TechStackCategories | string[]): TechStackCategories {
+function parseTechStack(
+  techStack: TechStackCategories | string[],
+): TechStackCategories {
   if (Array.isArray(techStack)) {
-    return { languages: [], frameworks: techStack, libraries: [], databases: [], tools: [] };
+    return {
+      languages: [],
+      frameworks: techStack,
+      libraries: [],
+      databases: [],
+      tools: [],
+    };
   }
   return techStack;
 }
@@ -203,8 +283,18 @@ export default function AnalysisPage() {
         <Card className="max-w-md w-full">
           <CardContent className="pt-6 text-center flex flex-col gap-4">
             <div className="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center mx-auto">
-              <svg className="w-6 h-6 text-destructive" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              <svg
+                className="w-6 h-6 text-destructive"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"
+                />
               </svg>
             </div>
             <p className="text-destructive font-medium">Analysis failed</p>
@@ -213,8 +303,18 @@ export default function AnalysisPage() {
               href="/"
               className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M10 19l-7-7m0 0l7-7m-7 7h18"
+                />
               </svg>
               Try another repository
             </a>
@@ -287,7 +387,9 @@ export default function AnalysisPage() {
             ) : (
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Summary</CardTitle>
+                  <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+                    Summary
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm leading-relaxed">{analysis!.summary}</p>
@@ -310,7 +412,13 @@ export default function AnalysisPage() {
         return (
           <Card>
             <CardContent className="pt-6 overflow-auto">
-              <MermaidDiagram chart={analysis!.diagrams.mermaid?.dependency ?? analysis!.diagrams.dependency ?? ""} />
+              <MermaidDiagram
+                chart={
+                  analysis!.diagrams.mermaid?.dependency ??
+                  analysis!.diagrams.dependency ??
+                  ""
+                }
+              />
             </CardContent>
           </Card>
         );
@@ -328,7 +436,13 @@ export default function AnalysisPage() {
         return (
           <Card>
             <CardContent className="pt-6 overflow-auto">
-              <MermaidDiagram chart={analysis!.diagrams.mermaid?.callGraph ?? analysis!.diagrams.callGraph ?? ""} />
+              <MermaidDiagram
+                chart={
+                  analysis!.diagrams.mermaid?.callGraph ??
+                  analysis!.diagrams.callGraph ??
+                  ""
+                }
+              />
             </CardContent>
           </Card>
         );
@@ -346,7 +460,13 @@ export default function AnalysisPage() {
         return (
           <Card>
             <CardContent className="pt-6 overflow-auto">
-              <MermaidDiagram chart={analysis!.diagrams.mermaid?.architecture ?? analysis!.diagrams.architecture ?? ""} />
+              <MermaidDiagram
+                chart={
+                  analysis!.diagrams.mermaid?.architecture ??
+                  analysis!.diagrams.architecture ??
+                  ""
+                }
+              />
             </CardContent>
           </Card>
         );
@@ -359,6 +479,9 @@ export default function AnalysisPage() {
             </CardContent>
           </Card>
         );
+
+      case "chat":
+        return <ChatPanel analysisId={analysis!.id} />;
 
       default:
         return null;
