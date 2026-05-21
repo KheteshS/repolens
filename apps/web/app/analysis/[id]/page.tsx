@@ -11,6 +11,7 @@ import AnalysisReport from "@/components/AnalysisReport";
 import QuickStats from "@/components/QuickStats";
 import FileTree from "@/components/FileTree";
 import MermaidDiagram from "@/components/MermaidDiagram";
+import ZoomableContainer from "@/components/ZoomableContainer";
 import ChatPanel from "@/components/ChatPanel";
 
 interface TechStackCategories {
@@ -410,8 +411,8 @@ export default function AnalysisPage() {
           );
         }
         return (
-          <Card>
-            <CardContent className="pt-6 overflow-auto">
+          <ZoomableContainer className="h-[650px]">
+            <div className="p-8 flex items-center justify-center min-h-full">
               <MermaidDiagram
                 chart={
                   analysis!.diagrams.mermaid?.dependency ??
@@ -419,8 +420,8 @@ export default function AnalysisPage() {
                   ""
                 }
               />
-            </CardContent>
-          </Card>
+            </div>
+          </ZoomableContainer>
         );
 
       case "callgraph":
@@ -434,8 +435,8 @@ export default function AnalysisPage() {
           );
         }
         return (
-          <Card>
-            <CardContent className="pt-6 overflow-auto">
+          <ZoomableContainer className="h-[650px]">
+            <div className="p-8 flex items-center justify-center min-h-full">
               <MermaidDiagram
                 chart={
                   analysis!.diagrams.mermaid?.callGraph ??
@@ -443,8 +444,8 @@ export default function AnalysisPage() {
                   ""
                 }
               />
-            </CardContent>
-          </Card>
+            </div>
+          </ZoomableContainer>
         );
 
       case "architecture":
@@ -458,8 +459,8 @@ export default function AnalysisPage() {
           );
         }
         return (
-          <Card>
-            <CardContent className="pt-6 overflow-auto">
+          <ZoomableContainer className="h-[650px]">
+            <div className="p-8 flex items-center justify-center min-h-full">
               <MermaidDiagram
                 chart={
                   analysis!.diagrams.mermaid?.architecture ??
@@ -467,17 +468,17 @@ export default function AnalysisPage() {
                   ""
                 }
               />
-            </CardContent>
-          </Card>
+            </div>
+          </ZoomableContainer>
         );
 
       case "files":
         return (
-          <Card>
-            <CardContent className="pt-6">
+          <div className="rounded-xl border border-slate-200 overflow-hidden h-[650px] overflow-y-auto" style={{ background: "#ffffff" }}>
+            <div className="p-6">
               <FileTree node={analysis!.fileTree} />
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         );
 
       case "chat":

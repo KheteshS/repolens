@@ -28,9 +28,9 @@ export default function DashboardLayout({
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      {/* Compact topbar — breadcrumb style, not repo-name-as-title */}
-      <header className="h-12 border-b border-border bg-card/80 backdrop-blur-sm flex items-center px-4 gap-3 shrink-0 sticky top-0 z-40">
+    <div className="h-screen flex flex-col overflow-hidden bg-background">
+      {/* Fixed topbar */}
+      <header className="h-12 border-b border-border bg-card/80 backdrop-blur-sm flex items-center px-4 gap-3 shrink-0 z-40">
         <a href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
           <div className="w-6 h-6 rounded-md bg-primary flex items-center justify-center">
             <svg className="w-3.5 h-3.5 text-primary-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -42,7 +42,6 @@ export default function DashboardLayout({
 
         <div className="h-4 w-px bg-border" />
 
-        {/* Breadcrumb navigation */}
         <nav className="flex items-center gap-1.5 text-xs text-muted-foreground">
           <span>Analysis</span>
           <svg className="w-3 h-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -65,7 +64,6 @@ export default function DashboardLayout({
           </a>
         )}
 
-        {/* New Analysis button */}
         <a
           href="/"
           className="ml-auto hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md border border-border text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
@@ -76,7 +74,6 @@ export default function DashboardLayout({
           New Analysis
         </a>
 
-        {/* Mobile sidebar toggle */}
         <button
           className="ml-auto md:hidden text-muted-foreground hover:text-foreground transition-colors"
           onClick={() => setSidebarOpen((o) => !o)}
@@ -87,8 +84,9 @@ export default function DashboardLayout({
         </button>
       </header>
 
-      <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar */}
+      {/* Body: fixed sidebar + scrollable content */}
+      <div className="flex flex-1 min-h-0">
+        {/* Fixed sidebar — no scroll */}
         <aside
           className={`${
             sidebarOpen ? "w-44" : "w-0 -ml-44"
@@ -113,8 +111,8 @@ export default function DashboardLayout({
           ))}
         </aside>
 
-        {/* Main content */}
-        <main className="flex-1 overflow-y-auto">
+        {/* Scrollable main content — ONLY this scrolls */}
+        <main className="flex-1 overflow-y-auto min-h-0">
           <div className="p-6 max-w-[1400px] mx-auto">{children}</div>
         </main>
       </div>

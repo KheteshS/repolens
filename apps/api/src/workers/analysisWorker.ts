@@ -5,7 +5,7 @@ import { ingestFromUrl, ingestFromZip } from "../services/repoIngestion.js";
 import { buildFileTree, parseFiles } from "../services/fileParser.js";
 import { buildGraphs } from "../services/graphBuilder.js";
 import { generateSummary } from "../services/summaryGenerator.js";
-import { generateDiagrams } from "../services/diagramGenerator.js";
+import { generateAllDiagrams } from "../services/diagramGenerator.js";
 
 export const ANALYSIS_QUEUE = "analysis";
 
@@ -68,9 +68,9 @@ export function startWorker() {
           graphs.architecture,
         );
 
-        // Step 5: Generate Mermaid diagrams
+        // Step 5: Generate diagrams (Mermaid + ReactFlow)
         await job.updateProgress(80);
-        const diagrams = generateDiagrams(
+        const diagrams = generateAllDiagrams(
           graphs.dependency,
           graphs.callGraph,
           graphs.architecture,

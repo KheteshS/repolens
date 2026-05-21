@@ -11,18 +11,17 @@ import {
   type Node,
   type Edge,
   BackgroundVariant,
-  Panel,
-  MarkerType,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import GraphNodeComponent from "./GraphNode";
+import AnimatedEdge from "./AnimatedEdge";
 import DetailPanel from "./DetailPanel";
 
 const nodeTypes = { graphNode: GraphNodeComponent };
+const edgeTypes = { animated: AnimatedEdge };
 
 const defaultEdgeOptions = {
-  style: { stroke: "#6366f1", strokeWidth: 1.5 },
-  markerEnd: { type: MarkerType.ArrowClosed, color: "#6366f1", width: 16, height: 16 },
+  style: { stroke: "#6366f1", strokeWidth: 2 },
   labelStyle: { fill: "#374151", fontSize: 10, fontWeight: 500 },
   labelBgStyle: { fill: "#ffffff", fillOpacity: 0.95 },
   labelBgPadding: [4, 2] as [number, number],
@@ -42,9 +41,16 @@ export default function InteractiveGraph({ nodes: initialNodes, edges: initialEd
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   // Sync nodes/edges when props change (tab switch)
+  // Ensure all edges are animated with dashed moving lines
   useEffect(() => {
     setNodes(initialNodes);
-    setEdges(initialEdges);
+    setEdges(
+      initialEdges.map((edge) => ({
+        ...edge,
+        type: "animated",
+        markerEnd: undefined,
+      }))
+    );
   }, [initialNodes, initialEdges, setNodes, setEdges]);
 
   const onNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
@@ -56,7 +62,7 @@ export default function InteractiveGraph({ nodes: initialNodes, edges: initialEd
   }, []);
 
   return (
-    <div className={`relative rounded-lg border border-border overflow-hidden ${isFullscreen ? "fixed inset-0 z-50 rounded-none w-screen h-screen" : "h-[650px] w-full"}`} style={{ background: "#f8fafc" }}>
+    <div className={`relative rounded-xl border border-slate-200 overflow-hidden ${isFullscreen ? "fixed inset-0 z-50 rounded-none w-screen h-screen" : "h-[650px] w-full"}`} style={{ background: "#f8fafc" }}>
       {/* Graph title bar */}
       <div className="absolute top-0 left-0 right-0 h-10 bg-white/90 backdrop-blur-sm border-b border-slate-200 flex items-center px-4 z-10">
         <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">{title}</span>
@@ -81,11 +87,12 @@ export default function InteractiveGraph({ nodes: initialNodes, edges: initialEd
           onNodeClick={onNodeClick}
           onPaneClick={onPaneClick}
           nodeTypes={nodeTypes}
+          edgeTypes={edgeTypes}
           defaultEdgeOptions={defaultEdgeOptions}
           fitView
           fitViewOptions={{ padding: 0.2 }}
-          minZoom={0.05}
-          maxZoom={4}
+          minZoom={0.02}
+          maxZoom={10}
           style={{ background: "#f8fafc" }}
           proOptions={{ hideAttribution: true }}
         >

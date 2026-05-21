@@ -18,13 +18,18 @@ export default function MermaidDiagram({ chart }: Props) {
       const mermaid = (await import("mermaid")).default;
       mermaid.initialize({
         startOnLoad: false,
-        theme: "dark",
+        theme: "default",
+        flowchart: {
+          curve: "rounded",
+        },
         themeVariables: {
-          background: "#1a1a2e",
-          primaryColor: "#7c3aed",
-          primaryTextColor: "#f0f0f0",
-          edgeLabelBackground: "#1a1a2e",
+          background: "#f8fafc",
+          primaryColor: "#6366f1",
+          primaryTextColor: "#1e293b",
+          edgeLabelBackground: "#ffffff",
           lineColor: "#6366f1",
+          secondaryColor: "#e0e7ff",
+          tertiaryColor: "#f1f5f9",
         },
       });
 
@@ -34,7 +39,23 @@ export default function MermaidDiagram({ chart }: Props) {
       try {
         const { svg } = await mermaid.render(id, chart);
         if (!cancelled && ref.current) {
-          ref.current.innerHTML = svg;
+          // Inject animation keyframes + apply dashed animated style to edge paths
+          const animStyle = `
+            <style>
+              @keyframes mermaidDash {
+                0% { stroke-dashoffset: 24; }
+                100% { stroke-dashoffset: 0; }
+              }
+              .edgePaths path, .edgePath path, .flowchart-link {
+                stroke-dasharray: 8 4 !important;
+                stroke-width: 2px !important;
+                stroke-linecap: round !important;
+                animation: mermaidDash 1s linear infinite !important;
+                marker-end: none !important;
+              }
+            </style>
+          `;
+          ref.current.innerHTML = animStyle + svg;
         }
       } catch {
         if (!cancelled && ref.current) {
@@ -44,8 +65,12 @@ export default function MermaidDiagram({ chart }: Props) {
     }
 
     render();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [chart]);
 
-  return <div ref={ref} className="min-h-[200px] flex items-center justify-center" />;
+  return (
+    <div ref={ref} className="min-h-[200px] flex items-center justify-center" />
+  );
 }

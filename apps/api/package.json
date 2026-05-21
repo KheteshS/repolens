@@ -10,6 +10,7 @@
     "check-types": "tsc --noEmit"
   },
   "dependencies": {
+    "@dagrejs/dagre": "^3.0.0",
     "@google/generative-ai": "^0.21",
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
