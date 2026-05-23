@@ -93,7 +93,7 @@ export default function Page() {
               <img src={session.user.image} alt="" className="w-8 h-8 rounded-full" />
             )}
             <span className="text-sm text-muted-foreground">{session.user.name}</span>
-            <Button variant="ghost" size="sm" onClick={() => signOut()}>
+            <Button variant="ghost" size="sm" onClick={() => signOut({ callbackUrl: "/" })}>
               Sign out
             </Button>
           </div>

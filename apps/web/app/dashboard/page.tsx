@@ -18,10 +18,16 @@ interface Analysis {
 }
 
 export default function DashboardPage() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
   const [analyses, setAnalyses] = useState<Analysis[]>([]);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.replace("/login?callbackUrl=/dashboard");
+    }
+  }, [status, router]);
 
   useEffect(() => {
     if (!session?.user?.email) return;
@@ -43,7 +49,7 @@ export default function DashboardPage() {
             <img src={session.user.image} alt="" className="w-8 h-8 rounded-full" />
           )}
           <span className="text-sm text-muted-foreground">{session?.user?.name}</span>
-          <Button variant="ghost" size="sm" onClick={() => signOut()}>
+          <Button variant="ghost" size="sm" onClick={() => signOut({ callbackUrl: "/" })}>
             Sign out
           </Button>
         </div>
