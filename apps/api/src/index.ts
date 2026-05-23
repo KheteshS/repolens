@@ -6,6 +6,7 @@ import { setupWebSocket } from "./routes/chat";
 import analyzeRouter from "./routes/analyze";
 import statusRouter from "./routes/status";
 import resultsRouter from "./routes/results";
+import analysesRouter from "./routes/analyses";
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -32,6 +33,7 @@ app.get("/health", (_req, res) => {
 app.use("/api/analyze", analyzeLimiter, analyzeRouter);
 app.use("/api/status", statusRouter);
 app.use("/api/results", resultsRouter);
+app.use("/api/analyses", analysesRouter);
 
 const server = app.listen(PORT, () => {
   console.log(`[API] Server running on http://localhost:${PORT}`);

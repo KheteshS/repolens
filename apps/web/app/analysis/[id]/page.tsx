@@ -223,13 +223,25 @@ function parseReport(summary: string): AnalysisReportData | null {
   }
 }
 
+const KNOWN_LANGUAGES = [
+  "TypeScript", "JavaScript", "Python", "Java", "Go", "Rust", "Ruby",
+  "C#", "C++", "C", "PHP", "Swift", "Kotlin", "Dart", "Scala", "Elixir",
+  "HTML", "CSS", "SCSS", "Sass", "SQL",
+];
+
 function parseTechStack(
   techStack: TechStackCategories | string[],
 ): TechStackCategories {
   if (Array.isArray(techStack)) {
+    const languages = techStack.filter((t) =>
+      KNOWN_LANGUAGES.some((l) => l.toLowerCase() === t.toLowerCase())
+    );
+    const frameworks = techStack.filter((t) =>
+      !KNOWN_LANGUAGES.some((l) => l.toLowerCase() === t.toLowerCase())
+    );
     return {
-      languages: [],
-      frameworks: techStack,
+      languages,
+      frameworks,
       libraries: [],
       databases: [],
       tools: [],
@@ -250,7 +262,22 @@ export default function AnalysisPage() {
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    if (!jobId) return;
+    if (!jobId) {
+      // Loaded from history — fetch completed analysis directly
+      fetch(`http://localhost:4000/api/results/${id}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.status === "completed") {
+            setAnalysis(data);
+          } else if (data.status === "failed") {
+            setError(data.errorMessage || "Analysis failed");
+          } else {
+            setError("Analysis still in progress — please wait");
+          }
+        })
+        .catch(() => setError("Could not reach API"));
+      return;
+    }
 
     async function poll() {
       try {
@@ -371,13 +398,19 @@ export default function AnalysisPage() {
   const techStack = parseTechStack(analysis.techStack);
   const hasReactFlow = !!analysis.diagrams.reactflow;
 
+  function countFiles(node: FileNode): number {
+    if (node.type === "file") return 1;
+    return (node.children || []).reduce((sum, child) => sum + countFiles(child), 0);
+  }
+  const totalFiles = analysis.fileTree ? countFiles(analysis.fileTree) : 0;
+
   function renderSection() {
     switch (activeSection) {
       case "overview":
         return (
           <div className="flex flex-col gap-6">
             <QuickStats
-              totalFiles={0}
+              totalFiles={totalFiles}
               languages={techStack.languages}
               architectureStyle={report ? "See report" : "Unknown"}
               analyzedAt={analysis!.createdAt}

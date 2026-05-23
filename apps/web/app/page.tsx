@@ -2,12 +2,15 @@
 
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { useSession, signOut } from "next-auth/react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function Page() {
   const router = useRouter();
+  const { data: session } = useSession();
   const [repoUrl, setRepoUrl] = useState("");
   const [urlError, setUrlError] = useState("");
   const [urlLoading, setUrlLoading] = useState(false);
@@ -27,8 +30,12 @@ export default function Page() {
       const res = await fetch("http://localhost:4000/api/analyze/url", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ repoUrl }),
+        body: JSON.stringify({ repoUrl, userEmail: session?.user?.email }),
       });
+      const contentType = res.headers.get("content-type") || "";
+      if (!contentType.includes("application/json")) {
+        throw new Error("Backend unavailable — make sure the API server is running on port 4000");
+      }
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to start analysis");
       router.push(`/analysis/${data.analysisId}?jobId=${data.jobId}`);
@@ -54,10 +61,15 @@ export default function Page() {
     try {
       const form = new FormData();
       form.append("file", file);
+      if (session?.user?.email) form.append("userEmail", session.user.email);
       const res = await fetch("http://localhost:4000/api/analyze/zip", {
         method: "POST",
         body: form,
       });
+      const contentType = res.headers.get("content-type") || "";
+      if (!contentType.includes("application/json")) {
+        throw new Error("Backend unavailable — make sure the API server is running on port 4000");
+      }
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to start analysis");
       router.push(`/analysis/${data.analysisId}?jobId=${data.jobId}`);
@@ -68,7 +80,33 @@ export default function Page() {
   }
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center px-4 py-16 gap-16">
+    <main className="min-h-screen flex flex-col items-center px-4 py-16 gap-16">
+      {/* Nav */}
+      <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-4 border-b border-border bg-background/80 backdrop-blur-sm">
+        <span className="text-lg font-bold tracking-tight">RepoLens</span>
+        {session?.user ? (
+          <div className="flex items-center gap-3">
+            <Link href="/dashboard">
+              <Button variant="ghost" size="sm">Dashboard</Button>
+            </Link>
+            {session.user.image && (
+              <img src={session.user.image} alt="" className="w-8 h-8 rounded-full" />
+            )}
+            <span className="text-sm text-muted-foreground">{session.user.name}</span>
+            <Button variant="ghost" size="sm" onClick={() => signOut()}>
+              Sign out
+            </Button>
+          </div>
+        ) : (
+          <Link href="/login">
+            <Button variant="outline" size="sm">Sign in</Button>
+          </Link>
+        )}
+      </nav>
+
+      {/* Spacer for fixed nav */}
+      <div className="h-8" />
+
       {/* Hero */}
       <div className="text-center max-w-2xl flex flex-col gap-4">
         <div className="flex items-center justify-center gap-3 mb-2">

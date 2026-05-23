@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { UserMenu } from "@/components/UserMenu";
 
 interface NavItem {
   id: string;
@@ -31,23 +32,50 @@ export default function DashboardLayout({
     <div className="h-screen flex flex-col overflow-hidden bg-background">
       {/* Fixed topbar */}
       <header className="h-12 border-b border-border bg-card/80 backdrop-blur-sm flex items-center px-4 gap-3 shrink-0 z-40">
-        <a href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+        <a
+          href="/"
+          className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+        >
           <div className="w-6 h-6 rounded-md bg-primary flex items-center justify-center">
-            <svg className="w-3.5 h-3.5 text-primary-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+            <svg
+              className="w-3.5 h-3.5 text-primary-foreground"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
+              />
             </svg>
           </div>
-          <span className="text-sm font-semibold text-foreground">RepoLens</span>
+          <span className="text-sm font-semibold text-foreground">
+            RepoLens
+          </span>
         </a>
 
         <div className="h-4 w-px bg-border" />
 
         <nav className="flex items-center gap-1.5 text-xs text-muted-foreground">
           <span>Analysis</span>
-          <svg className="w-3 h-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          <svg
+            className="w-3 h-3 opacity-50"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M9 5l7 7-7 7"
+            />
           </svg>
-          <span className="text-foreground font-medium truncate max-w-[220px]">{repoName}</span>
+          <span className="text-foreground font-medium truncate max-w-[220px]">
+            {repoName}
+          </span>
         </nav>
 
         {repoUrl && (
@@ -64,22 +92,64 @@ export default function DashboardLayout({
           </a>
         )}
 
-        <a
-          href="/"
-          className="ml-auto hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md border border-border text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-        >
-          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          New Analysis
-        </a>
+        <div className="ml-auto hidden md:flex items-center gap-2">
+          <a
+            href="/dashboard"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md border border-border text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+          >
+            <svg
+              className="w-3.5 h-3.5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+              />
+            </svg>
+            Dashboard
+          </a>
+          <a
+            href="/"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md border border-border text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+          >
+            <svg
+              className="w-3.5 h-3.5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 4v16m8-8H4"
+              />
+            </svg>
+            New Analysis
+          </a>
+          <UserMenu />
+        </div>
 
         <button
           className="ml-auto md:hidden text-muted-foreground hover:text-foreground transition-colors"
           onClick={() => setSidebarOpen((o) => !o)}
         >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+          <svg
+            className="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M4 6h16M4 12h16M4 18h16"
+            />
           </svg>
         </button>
       </header>
@@ -93,7 +163,9 @@ export default function DashboardLayout({
           } md:w-44 md:ml-0 border-r border-border bg-card/40 flex flex-col py-3 transition-all duration-200 overflow-hidden shrink-0`}
         >
           <div className="px-4 mb-2">
-            <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">Sections</span>
+            <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">
+              Sections
+            </span>
           </div>
           {items.map((item) => (
             <button

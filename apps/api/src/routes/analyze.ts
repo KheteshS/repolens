@@ -12,9 +12,10 @@ const upload = multer({
 
 // POST /api/analyze - submit GitHub URL
 router.post("/url", async (req, res) => {
-  const { repoUrl, githubToken } = req.body as {
+  const { repoUrl, githubToken, userEmail } = req.body as {
     repoUrl?: string;
     githubToken?: string;
+    userEmail?: string;
   };
 
   if (!repoUrl || !repoUrl.includes("github.com")) {
@@ -22,11 +23,23 @@ router.post("/url", async (req, res) => {
     return;
   }
 
+  let userId: string | undefined;
+  if (userEmail) {
+    const user = await prisma.user.upsert({
+      where: { email: userEmail },
+      update: {},
+      create: { email: userEmail },
+      select: { id: true },
+    });
+    userId = user.id;
+  }
+
   const analysis = await prisma.analysis.create({
     data: {
       repoUrl,
       repoName: repoUrl.split("/").pop()?.replace(".git", "") ?? "repo",
       status: "pending",
+      userId,
     },
   });
 
@@ -46,10 +59,23 @@ router.post("/zip", upload.single("file"), async (req, res) => {
     return;
   }
 
+  const userEmail = req.body.userEmail as string | undefined;
+  let userId: string | undefined;
+  if (userEmail) {
+    const user = await prisma.user.upsert({
+      where: { email: userEmail },
+      update: {},
+      create: { email: userEmail },
+      select: { id: true },
+    });
+    userId = user.id;
+  }
+
   const analysis = await prisma.analysis.create({
     data: {
       repoName: req.file.originalname.replace(/\.zip$/i, ""),
       status: "pending",
+      userId,
     },
   });
 
