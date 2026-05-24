@@ -11,31 +11,38 @@ export const authOptions: NextAuthOptions = {
     GitHubProvider({
       clientId: process.env.GITHUB_CLIENT_ID!,
       clientSecret: process.env.GITHUB_CLIENT_SECRET!,
+      authorization: {
+        params: { scope: "read:user user:email repo" },
+      },
     }),
   ],
   session: {
-    strategy: "jwt", // No DB needed — session stored in encrypted cookie
+    strategy: "jwt",
   },
   callbacks: {
     async jwt({ token, account }) {
-      // First login: persist provider info into the JWT
       if (account) {
         token.provider = account.provider;
         token.providerAccountId = account.providerAccountId;
+        if (account.provider === "github" && account.access_token) {
+          token.githubAccessToken = account.access_token;
+        }
       }
       return token;
     },
     async session({ session, token }) {
-      // Expose token data to client via useSession()
       if (session.user) {
         session.user.id = token.sub;
         session.user.provider = token.provider;
+        if (token.githubAccessToken) {
+          session.user.githubAccessToken = token.githubAccessToken as string;
+        }
       }
       return session;
     },
   },
   pages: {
-    signIn: "/login", // Custom login page instead of default NextAuth one
+    signIn: "/login",
   },
 };
 

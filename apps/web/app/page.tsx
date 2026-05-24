@@ -1,12 +1,20 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { useSession, signOut } from "next-auth/react";
+import { useSession, signIn, signOut } from "next-auth/react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+
+type RepoVisibility = "unknown" | "checking" | "public" | "private";
+
+function extractOwnerRepo(url: string): string | null {
+  const match = url.match(/github\.com\/([^/]+\/[^/]+)/);
+  if (!match) return null;
+  return match[1].replace(/\.git$/, "");
+}
 
 export default function Page() {
   const router = useRouter();
@@ -16,7 +24,53 @@ export default function Page() {
   const [urlLoading, setUrlLoading] = useState(false);
   const [zipLoading, setZipLoading] = useState(false);
   const [zipError, setZipError] = useState("");
+  const [visibility, setVisibility] = useState<RepoVisibility>("unknown");
+  const [showPrivatePrompt, setShowPrivatePrompt] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const checkTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const checkRepoVisibility = useCallback(async (url: string) => {
+    const ownerRepo = extractOwnerRepo(url);
+    if (!ownerRepo) {
+      setVisibility("unknown");
+      return;
+    }
+
+    setVisibility("checking");
+    try {
+      const res = await fetch(`https://api.github.com/repos/${ownerRepo}`, {
+        headers: { Accept: "application/vnd.github.v3+json" },
+      });
+      if (res.status === 200) {
+        const data = await res.json();
+        setVisibility(data.private ? "private" : "public");
+      } else if (res.status === 404) {
+        setVisibility("private");
+      } else {
+        setVisibility("unknown");
+      }
+    } catch {
+      setVisibility("unknown");
+    }
+  }, []);
+
+  useEffect(() => {
+    if (checkTimeout.current) clearTimeout(checkTimeout.current);
+
+    if (!repoUrl.includes("github.com/")) {
+      setVisibility("unknown");
+      setShowPrivatePrompt(false);
+      return;
+    }
+
+    checkTimeout.current = setTimeout(() => {
+      checkRepoVisibility(repoUrl);
+    }, 600);
+
+    return () => { if (checkTimeout.current) clearTimeout(checkTimeout.current); };
+  }, [repoUrl, checkRepoVisibility]);
+
+  const hasGithubToken = !!session?.user?.githubAccessToken;
 
   async function handleUrlSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -25,12 +79,23 @@ export default function Page() {
       setUrlError("Enter a valid GitHub URL");
       return;
     }
+
+    if (visibility === "private" && !hasGithubToken) {
+      setShowPrivatePrompt(true);
+      return;
+    }
+
+    setShowPrivatePrompt(false);
     setUrlLoading(true);
     try {
       const res = await fetch("http://localhost:4000/api/analyze/url", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ repoUrl, userEmail: session?.user?.email }),
+        body: JSON.stringify({
+          repoUrl,
+          userEmail: session?.user?.email,
+          githubToken: session?.user?.githubAccessToken,
+        }),
       });
       const contentType = res.headers.get("content-type") || "";
       if (!contentType.includes("application/json")) {
@@ -141,17 +206,66 @@ export default function Page() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleUrlSubmit} className="flex gap-2">
-              <Input
-                placeholder="https://github.com/owner/repo"
-                value={repoUrl}
-                onChange={(e) => setRepoUrl(e.target.value)}
-                disabled={urlLoading}
-                className="flex-1"
-              />
+              <div className="relative flex-1">
+                <Input
+                  placeholder="https://github.com/owner/repo"
+                  value={repoUrl}
+                  onChange={(e) => { setRepoUrl(e.target.value); setShowPrivatePrompt(false); }}
+                  disabled={urlLoading}
+                  className="pr-24"
+                />
+                {visibility !== "unknown" && (
+                  <span className={`absolute right-2 top-1/2 -translate-y-1/2 text-xs px-2 py-0.5 rounded-full font-medium ${
+                    visibility === "checking"
+                      ? "bg-muted text-muted-foreground"
+                      : visibility === "public"
+                        ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                        : "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400"
+                  }`}>
+                    {visibility === "checking" ? "Checking…" : visibility === "public" ? "Public" : "Private 🔒"}
+                  </span>
+                )}
+              </div>
               <Button type="submit" disabled={urlLoading || !repoUrl}>
                 {urlLoading ? "Analyzing…" : "Analyze"}
               </Button>
             </form>
+
+            {showPrivatePrompt && (
+              <div className="mt-3 p-3 rounded-lg border border-orange-200 bg-orange-50 dark:border-orange-800 dark:bg-orange-950/30">
+                <p className="text-sm text-orange-800 dark:text-orange-200 mb-2">
+                  This repo is private. Sign in with GitHub to grant access.
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    onClick={() => signIn("github", { callbackUrl: window.location.href })}
+                  >
+                    <svg className="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
+                    </svg>
+                    Sign in with GitHub
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setShowPrivatePrompt(false)}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {visibility === "private" && hasGithubToken && (
+              <p className="text-xs text-green-600 dark:text-green-400 mt-2 flex items-center gap-1">
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                You have GitHub access — private repo will be analyzed with your token
+              </p>
+            )}
+
             {urlError && <p className="text-destructive text-sm mt-2">{urlError}</p>}
           </CardContent>
         </Card>

@@ -8,6 +8,7 @@ declare module "next-auth" {
       email?: string | null;
       image?: string | null;
       provider?: string;
+      githubAccessToken?: string;
     };
   }
 }
@@ -16,5 +17,6 @@ declare module "next-auth/jwt" {
   interface JWT {
     provider?: string;
     providerAccountId?: string;
+    githubAccessToken?: string;
   }
 }
