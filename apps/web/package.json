@@ -33,6 +33,7 @@
   },
   "devDependencies": {
     "@next/eslint-plugin-next": "^16.2.0",
+    "@playwright/test": "^1.60.0",
     "@repo/eslint-config": "*",
     "@repo/tailwind-config": "*",
     "@repo/typescript-config": "*",

@@ -7,7 +7,11 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "check-types": "tsc --noEmit"
+    "check-types": "tsc --noEmit",
+    "test": "vitest",
+    "test:unit": "vitest run --dir __tests__/unit",
+    "test:integration": "vitest run --dir __tests__/integration",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@dagrejs/dagre": "^3.0.0",
@@ -33,9 +37,14 @@
     "@types/express": "*",
     "@types/multer": "*",
     "@types/pg": "^8.20.0",
+    "@types/supertest": "^7.2.0",
     "@types/ws": "^8.18.1",
+    "@vitest/coverage-v8": "^4.1.7",
     "prisma": "^7.8.0",
+    "supertest": "^7.2.2",
     "tsx": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.7",
+    "vitest-mock-extended": "^4.0.0"
   }
 }
