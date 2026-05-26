@@ -1,114 +1,320 @@
-import Image from "next/image";
-import { Card } from "@repo/ui/card";
-import { Gradient } from "@repo/ui/gradient";
-import { TurborepoLogo } from "@repo/ui/turborepo-logo";
+"use client";
 
-const LINKS = [
-  {
-    title: "Docs",
-    href: "https://turborepo.dev/docs",
-    description: "Find in-depth information about Turborepo features and API.",
-  },
-  {
-    title: "Learn",
-    href: "https://turborepo.dev/docs/handbook",
-    description: "Learn more about monorepos with our handbook.",
-  },
-  {
-    title: "Templates",
-    href: "https://turborepo.dev/docs/getting-started/from-example",
-    description: "Choose from over 15 examples and deploy with a single click.",
-  },
-  {
-    title: "Deploy",
-    href: "https://vercel.com/new",
-    description:
-      "Instantly deploy your Turborepo to a shareable URL with Vercel.",
-  },
-];
+import { useState, useRef, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { useSession, signIn, signOut } from "next-auth/react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+
+type RepoVisibility = "unknown" | "checking" | "public" | "private";
+
+function extractOwnerRepo(url: string): string | null {
+  const match = url.match(/github\.com\/([^/]+\/[^/]+)/);
+  if (!match) return null;
+  return match[1].replace(/\.git$/, "");
+}
 
 export default function Page() {
+  const router = useRouter();
+  const { data: session } = useSession();
+  const [repoUrl, setRepoUrl] = useState("");
+  const [urlError, setUrlError] = useState("");
+  const [urlLoading, setUrlLoading] = useState(false);
+  const [zipLoading, setZipLoading] = useState(false);
+  const [zipError, setZipError] = useState("");
+  const [visibility, setVisibility] = useState<RepoVisibility>("unknown");
+  const [showPrivatePrompt, setShowPrivatePrompt] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const checkTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const checkRepoVisibility = useCallback(async (url: string) => {
+    const ownerRepo = extractOwnerRepo(url);
+    if (!ownerRepo) {
+      setVisibility("unknown");
+      return;
+    }
+
+    setVisibility("checking");
+    try {
+      const res = await fetch(`https://api.github.com/repos/${ownerRepo}`, {
+        headers: { Accept: "application/vnd.github.v3+json" },
+      });
+      if (res.status === 200) {
+        const data = await res.json();
+        setVisibility(data.private ? "private" : "public");
+      } else if (res.status === 404) {
+        setVisibility("private");
+      } else {
+        setVisibility("unknown");
+      }
+    } catch {
+      setVisibility("unknown");
+    }
+  }, []);
+
+  useEffect(() => {
+    if (checkTimeout.current) clearTimeout(checkTimeout.current);
+
+    if (!repoUrl.includes("github.com/")) {
+      setVisibility("unknown");
+      setShowPrivatePrompt(false);
+      return;
+    }
+
+    checkTimeout.current = setTimeout(() => {
+      checkRepoVisibility(repoUrl);
+    }, 600);
+
+    return () => { if (checkTimeout.current) clearTimeout(checkTimeout.current); };
+  }, [repoUrl, checkRepoVisibility]);
+
+  const hasGithubToken = !!session?.user?.githubAccessToken;
+
+  async function handleUrlSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setUrlError("");
+    if (!repoUrl.includes("github.com")) {
+      setUrlError("Enter a valid GitHub URL");
+      return;
+    }
+
+    if (visibility === "private" && !hasGithubToken) {
+      setShowPrivatePrompt(true);
+      return;
+    }
+
+    setShowPrivatePrompt(false);
+    setUrlLoading(true);
+    try {
+      const res = await fetch("http://localhost:4000/api/analyze/url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          repoUrl,
+          userEmail: session?.user?.email,
+          githubToken: session?.user?.githubAccessToken,
+        }),
+      });
+      const contentType = res.headers.get("content-type") || "";
+      if (!contentType.includes("application/json")) {
+        throw new Error("Backend unavailable — make sure the API server is running on port 4000");
+      }
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to start analysis");
+      router.push(`/analysis/${data.analysisId}?jobId=${data.jobId}`);
+    } catch (err: unknown) {
+      setUrlError(err instanceof Error ? err.message : "Something went wrong");
+      setUrlLoading(false);
+    }
+  }
+
+  async function handleZipUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setZipError("");
+    if (!file.name.endsWith(".zip")) {
+      setZipError("Only .zip files are supported");
+      return;
+    }
+    if (file.size > 100 * 1024 * 1024) {
+      setZipError("File must be under 100MB");
+      return;
+    }
+    setZipLoading(true);
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      if (session?.user?.email) form.append("userEmail", session.user.email);
+      const res = await fetch("http://localhost:4000/api/analyze/zip", {
+        method: "POST",
+        body: form,
+      });
+      const contentType = res.headers.get("content-type") || "";
+      if (!contentType.includes("application/json")) {
+        throw new Error("Backend unavailable — make sure the API server is running on port 4000");
+      }
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to start analysis");
+      router.push(`/analysis/${data.analysisId}?jobId=${data.jobId}`);
+    } catch (err: unknown) {
+      setZipError(err instanceof Error ? err.message : "Something went wrong");
+      setZipLoading(false);
+    }
+  }
+
   return (
-    <main className="flex flex-col items-center justify-between min-h-screen p-24">
-      <div className="z-10 items-center justify-between w-full max-w-5xl font-mono text-sm lg:flex">
-        <p className="fixed top-0 left-0 flex justify-center w-full px-4 pt-8 pb-6 border backdrop-blur-2xl border-neutral-800 from-inherit lg:static lg:w-auto lg:rounded-xl lg:p-4">
-          examples/with-tailwind -&nbsp;
-          <code className="font-mono font-bold">web</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex items-end justify-center w-full h-48 lg:static lg:h-auto lg:w-auto">
-          <a
-            className="flex gap-2 p-8 pointer-events-none place-items-center lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-turbo&utm_medium=basic&utm_campaign=create-turbo"
-            rel="noopener noreferrer"
-            target="_blank"
-          >
-            By{" "}
-            <Image
-              alt="Vercel Logo"
-              className="dark:invert"
-              height={24}
-              priority
-              src="/vercel.svg"
-              width={100}
-            />
-          </a>
-        </div>
-      </div>
-
-      <div className="relative flex place-items-center ">
-        <div className="font-sans w-auto pb-16 pt-[48px] md:pb-24 lg:pb-32 md:pt-16 lg:pt-20 flex justify-between gap-8 items-center flex-col relative z-0">
-          <div className="z-50 flex items-center justify-center w-full">
-            <div className="absolute min-w-[614px] min-h-[614px]">
-              <Image
-                alt="Turborepo"
-                height={614}
-                src="circles.svg"
-                width={614}
-              />
-            </div>
-            <div className="absolute z-50 flex items-center justify-center w-64 h-64">
-              <Gradient
-                className="opacity-90 w-[120px] h-[120px]"
-                conic
-                small
-              />
-            </div>
-
-            <div className="flex justify-center items-center z-50">
-              <TurborepoLogo />
-            </div>
+    <main className="min-h-screen flex flex-col items-center px-4 py-16 gap-16">
+      {/* Nav */}
+      <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-4 border-b border-border bg-background/80 backdrop-blur-sm">
+        <span className="text-lg font-bold tracking-tight">RepoLens</span>
+        {session?.user ? (
+          <div className="flex items-center gap-3">
+            <Link href="/dashboard">
+              <Button variant="ghost" size="sm">Dashboard</Button>
+            </Link>
+            {session.user.image && (
+              <img src={session.user.image} alt="" className="w-8 h-8 rounded-full" />
+            )}
+            <span className="text-sm text-muted-foreground">{session.user.name}</span>
+            <Button variant="ghost" size="sm" onClick={() => signOut({ callbackUrl: "/" })}>
+              Sign out
+            </Button>
           </div>
-          <Gradient
-            className="top-[-500px] opacity-[0.15] w-[1000px] h-[1000px]"
-            conic
-          />
-          <div className="z-50 flex flex-col items-center justify-center gap-5 px-6 text-center lg:gap-6">
-            <svg
-              className="w-[160px] md:w-[200px] fill-black dark:fill-white"
-              viewBox="0 0 506 50"
-              width={200}
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <title>Turborepo logo</title>
-              <path d="M53.7187 12.0038V1.05332H0.945312V12.0038H20.8673V48.4175H33.7968V12.0038H53.7187Z" />
-              <path d="M83.5362 49.1431C99.764 49.1431 108.67 40.8972 108.67 27.3081V1.05332H95.7401V26.0547C95.7401 33.6409 91.7821 37.9287 83.5362 37.9287C75.2904 37.9287 71.3324 33.6409 71.3324 26.0547V1.05332H58.4029V27.3081C58.4029 40.8972 67.3084 49.1431 83.5362 49.1431Z" />
-              <path d="M128.462 32.7174H141.325L151.484 48.4175H166.327L154.848 31.3321C161.313 29.0232 165.271 23.8778 165.271 16.8853C165.271 6.72646 157.685 1.05332 146.141 1.05332H115.532V48.4175H128.462V32.7174ZM128.462 22.4925V11.8719H145.481C150.033 11.8719 152.54 13.8509 152.54 17.2152C152.54 20.3816 150.033 22.4925 145.481 22.4925H128.462Z" />
-              <path d="M171.287 48.4175H205.128C215.683 48.4175 221.752 43.404 221.752 35.0262C221.752 29.419 218.189 25.593 213.967 23.8778C216.87 22.4925 220.432 19.1942 220.432 13.9828C220.432 5.60502 214.495 1.05332 204.006 1.05332H171.287V48.4175ZM183.689 19.59V11.542H202.687C206.249 11.542 208.228 12.9273 208.228 15.566C208.228 18.2047 206.249 19.59 202.687 19.59H183.689ZM183.689 29.2871H203.875C207.371 29.2871 209.284 31.0022 209.284 33.5749C209.284 36.1476 207.371 37.8628 203.875 37.8628H183.689V29.2871Z" />
-              <path d="M253.364 0.261719C236.806 0.261719 224.866 10.6185 224.866 24.7354C224.866 38.8523 236.806 49.2091 253.364 49.2091C269.922 49.2091 281.796 38.8523 281.796 24.7354C281.796 10.6185 269.922 0.261719 253.364 0.261719ZM253.364 11.4761C262.072 11.4761 268.602 16.6215 268.602 24.7354C268.602 32.8493 262.072 37.9947 253.364 37.9947C244.656 37.9947 238.126 32.8493 238.126 24.7354C238.126 16.6215 244.656 11.4761 253.364 11.4761Z" />
-              <path d="M300.429 32.7174H313.292L323.451 48.4175H338.294L326.815 31.3321C333.28 29.0232 337.238 23.8778 337.238 16.8853C337.238 6.72646 329.652 1.05332 318.108 1.05332H287.499V48.4175H300.429V32.7174ZM300.429 22.4925V11.8719H317.448C322 11.8719 324.507 13.8509 324.507 17.2152C324.507 20.3816 322 22.4925 317.448 22.4925H300.429Z" />
-              <path d="M343.254 1.05332V48.4175H389.299V37.467H355.92V29.7489H385.539V19.0622H355.92V12.0038H389.299V1.05332H343.254Z" />
-              <path d="M408.46 33.3111H425.677C437.221 33.3111 444.807 27.7699 444.807 17.2152C444.807 6.59453 437.221 1.05332 425.677 1.05332H395.53V48.4175H408.46V33.3111ZM408.46 22.5585V11.8719H424.951C429.569 11.8719 432.076 13.8509 432.076 17.2152C432.076 20.5135 429.569 22.5585 424.951 22.5585H408.46Z" />
-              <path d="M476.899 0.261719C460.341 0.261719 448.401 10.6185 448.401 24.7354C448.401 38.8523 460.341 49.2091 476.899 49.2091C493.456 49.2091 505.33 38.8523 505.33 24.7354C505.33 10.6185 493.456 0.261719 476.899 0.261719ZM476.899 11.4761C485.606 11.4761 492.137 16.6215 492.137 24.7354C492.137 32.8493 485.606 37.9947 476.899 37.9947C468.191 37.9947 461.66 32.8493 461.66 24.7354C461.66 16.6215 468.191 11.4761 476.899 11.4761Z" />
+        ) : (
+          <Link href="/login">
+            <Button variant="outline" size="sm">Sign in</Button>
+          </Link>
+        )}
+      </nav>
+
+      {/* Spacer for fixed nav */}
+      <div className="h-8" />
+
+      {/* Hero */}
+      <div className="text-center max-w-2xl flex flex-col gap-4">
+        <div className="flex items-center justify-center gap-3 mb-2">
+          <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
+            <svg className="w-5 h-5 text-primary-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
             </svg>
           </div>
+          <span className="text-2xl font-bold tracking-tight">RepoLens</span>
         </div>
+        <h1 className="text-5xl font-bold tracking-tight leading-tight">
+          Understand any codebase<br />
+          <span className="text-primary">in minutes</span>
+        </h1>
+        <p className="text-muted-foreground text-lg">
+          Paste a GitHub URL or upload a ZIP — RepoLens generates dependency graphs, call graphs, architecture diagrams, and an AI assistant that knows your entire repo.
+        </p>
       </div>
 
-      <div className="grid mb-32 text-center lg:max-w-5xl lg:w-full lg:mb-0 lg:grid-cols-4 lg:text-left">
-        {LINKS.map(({ title, href, description }) => (
-          <Card href={href} key={title} title={title}>
-            {description}
-          </Card>
+      {/* Input cards */}
+      <div className="w-full max-w-2xl flex flex-col gap-4">
+        {/* GitHub URL */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
+              </svg>
+              Analyze GitHub Repository
+            </CardTitle>
+            <CardDescription>Public repos work instantly. Private repos need a GitHub token.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleUrlSubmit} className="flex gap-2">
+              <div className="relative flex-1">
+                <Input
+                  placeholder="https://github.com/owner/repo"
+                  value={repoUrl}
+                  onChange={(e) => { setRepoUrl(e.target.value); setShowPrivatePrompt(false); }}
+                  disabled={urlLoading}
+                  className="pr-24"
+                />
+                {visibility !== "unknown" && (
+                  <span className={`absolute right-2 top-1/2 -translate-y-1/2 text-xs px-2 py-0.5 rounded-full font-medium ${
+                    visibility === "checking"
+                      ? "bg-muted text-muted-foreground"
+                      : visibility === "public"
+                        ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                        : "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400"
+                  }`}>
+                    {visibility === "checking" ? "Checking…" : visibility === "public" ? "Public" : "Private 🔒"}
+                  </span>
+                )}
+              </div>
+              <Button type="submit" disabled={urlLoading || !repoUrl}>
+                {urlLoading ? "Analyzing…" : "Analyze"}
+              </Button>
+            </form>
+
+            {showPrivatePrompt && (
+              <div className="mt-3 p-3 rounded-lg border border-orange-200 bg-orange-50 dark:border-orange-800 dark:bg-orange-950/30">
+                <p className="text-sm text-orange-800 dark:text-orange-200 mb-2">
+                  This repo is private. Sign in with GitHub to grant access.
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    onClick={() => signIn("github", { callbackUrl: window.location.href })}
+                  >
+                    <svg className="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
+                    </svg>
+                    Sign in with GitHub
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setShowPrivatePrompt(false)}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {visibility === "private" && hasGithubToken && (
+              <p className="text-xs text-green-600 dark:text-green-400 mt-2 flex items-center gap-1">
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                You have GitHub access — private repo will be analyzed with your token
+              </p>
+            )}
+
+            {urlError && <p className="text-destructive text-sm mt-2">{urlError}</p>}
+          </CardContent>
+        </Card>
+
+        <div className="flex items-center gap-3 text-muted-foreground text-sm">
+          <div className="flex-1 h-px bg-border" />
+          or
+          <div className="flex-1 h-px bg-border" />
+        </div>
+
+        {/* ZIP upload */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+              </svg>
+              Upload ZIP Archive
+            </CardTitle>
+            <CardDescription>Upload a .zip of your project. Max 100MB.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <input
+              ref={fileRef}
+              type="file"
+              accept=".zip"
+              className="hidden"
+              onChange={handleZipUpload}
+              disabled={zipLoading}
+            />
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => fileRef.current?.click()}
+              disabled={zipLoading}
+            >
+              {zipLoading ? "Uploading…" : "Choose ZIP file"}
+            </Button>
+            {zipError && <p className="text-destructive text-sm mt-2">{zipError}</p>}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Feature pills */}
+      <div className="flex flex-wrap gap-2 justify-center text-sm">
+        {["Dependency graphs", "Call graphs", "Architecture diagrams", "AI chat assistant", "7 languages", "Streaming responses"].map((f) => (
+          <span key={f} className="px-3 py-1 rounded-full border border-border bg-card text-muted-foreground">
+            {f}
+          </span>
         ))}
       </div>
     </main>

@@ -1,0 +1,107 @@
+{
+  "info": {
+    "name": "RepoLens API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:4000"
+    },
+    {
+      "key": "jobId",
+      "value": ""
+    },
+    {
+      "key": "analysisId",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/health"
+      }
+    },
+    {
+      "name": "Analyze GitHub URL",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const json = pm.response.json();",
+              "if (json.jobId) pm.collectionVariables.set('jobId', json.jobId);",
+              "if (json.analysisId) pm.collectionVariables.set('analysisId', json.analysisId);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"repoUrl\": \"https://github.com/expressjs/express\"\n}"
+        },
+        "url": "{{baseUrl}}/api/analyze/url"
+      }
+    },
+    {
+      "name": "Poll Job Status",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/status/{{jobId}}"
+      }
+    },
+    {
+      "name": "Get Analysis Results",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/results/{{analysisId}}"
+      }
+    },
+    {
+      "name": "Analyze ZIP Upload",
+      "request": {
+        "method": "POST",
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "file",
+              "type": "file",
+              "src": ""
+            }
+          ]
+        },
+        "url": "{{baseUrl}}/api/analyze/zip"
+      }
+    },
+    {
+      "name": "Rate Limit Test",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"repoUrl\": \"https://github.com/expressjs/express\"\n}"
+        },
+        "url": "{{baseUrl}}/api/analyze/url"
+      }
+    }
+  ]
+}

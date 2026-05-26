@@ -1,0 +1,58 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id                String        @id @default(uuid())
+  email             String        @unique
+  name              String?
+  image             String?
+  githubAccessToken String?
+  createdAt         DateTime      @default(now())
+  analyses          Analysis[]
+  chatSessions      ChatSession[]
+}
+
+model Analysis {
+  id           String        @id @default(uuid())
+  userId       String?
+  user         User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  repoUrl      String?
+  repoName     String
+  summary      String?
+  techStack    Json          @default("[]")
+  fileTree     Json?
+  diagrams     Json?
+  status       String        @default("pending")
+  errorMessage String?
+  createdAt    DateTime      @default(now())
+  chatSessions ChatSession[]
+
+  @@index([userId])
+  @@index([status])
+}
+
+model ChatSession {
+  id         String        @id @default(uuid())
+  analysisId String
+  analysis   Analysis      @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  userId     String?
+  user       User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  createdAt  DateTime      @default(now())
+  messages   ChatMessage[]
+}
+
+model ChatMessage {
+  id        String      @id @default(uuid())
+  sessionId String
+  session   ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  role      String
+  content   String
+  createdAt DateTime    @default(now())
+
+  @@index([sessionId])
+}
