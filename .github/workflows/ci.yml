@@ -1,0 +1,147 @@
+# CI Pipeline for RepoLens
+# Triggers on: push to main, all pull requests
+# Jobs: lint → test-backend → test-e2e (sequential for dependency)
+
+name: CI
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main]
+
+# Cancel in-progress runs for same branch/PR (saves CI minutes)
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ─────────────────────────────────────────────────────────────
+  # Job 1: Lint + Type Check
+  # Fast feedback — catches syntax/type errors before running tests
+  # ─────────────────────────────────────────────────────────────
+  lint-and-typecheck:
+    name: Lint & Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "npm"
+          # Caches node_modules based on package-lock.json hash
+          # Second run skips full npm install if lockfile unchanged
+
+      - name: Install dependencies
+        run: npm ci
+        # `npm ci` = clean install from lockfile (faster than `npm install`)
+        # Ensures CI uses exact versions from package-lock.json
+
+      - name: Run linter
+        run: npx turbo lint
+        # Turbo runs lint in all workspaces that have a "lint" script
+        # Catches ESLint errors (unused vars, import issues, etc.)
+
+      - name: Run type check
+        run: npx turbo check-types
+        # Runs `tsc --noEmit` in each workspace
+        # Catches TypeScript errors without emitting files
+
+  # ─────────────────────────────────────────────────────────────
+  # Job 2: Backend Tests (Unit + Integration)
+  # Runs vitest with mocked Prisma/Redis/Gemini — no real services needed
+  # ─────────────────────────────────────────────────────────────
+  test-backend:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+    needs: lint-and-typecheck
+    # Only runs if lint passes — no point testing broken code
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run unit tests
+        run: npm run test:unit --workspace=apps/api
+        # Runs vitest on __tests__/unit/ directory
+        # Tests: fileParser, graphBuilder, diagramGenerator,
+        #        summaryGenerator, repoIngestion, geminiClient
+
+      - name: Run integration tests
+        run: npm run test:integration --workspace=apps/api
+        # Runs vitest on __tests__/integration/ directory
+        # Tests: analyze, analyses, results, status routes
+        # Uses supertest to hit Express app with mocked DB/queue
+
+  # ─────────────────────────────────────────────────────────────
+  # Job 3: E2E Tests (Playwright)
+  # Builds Next.js app, starts dev server, runs browser tests
+  # ─────────────────────────────────────────────────────────────
+  test-e2e:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    needs: lint-and-typecheck
+    # Runs in parallel with test-backend (both need lint to pass)
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+        working-directory: apps/web
+        # Downloads Chromium binary + system deps (libgbm, libnss, etc.)
+        # --with-deps installs OS-level libraries needed on Ubuntu
+        # Only Chromium — Firefox/Safari skipped for speed
+
+      - name: Create env file for Next.js
+        run: |
+          cat > apps/web/.env.local << 'EOF'
+          NEXTAUTH_URL=http://localhost:3000
+          NEXTAUTH_SECRET=ci-test-secret-not-real
+          GOOGLE_CLIENT_ID=fake-google-id
+          GOOGLE_CLIENT_SECRET=fake-google-secret
+          GITHUB_CLIENT_ID=fake-github-id
+          GITHUB_CLIENT_SECRET=fake-github-secret
+          EOF
+        # Next.js needs these env vars to start without crashing
+        # Values are fake — E2E tests mock all auth endpoints via page.route()
+        # Never use real credentials in CI
+
+      - name: Run Playwright tests
+        run: npx playwright test
+        working-directory: apps/web
+        # Playwright config has `webServer.command: "npm run dev"`
+        # → Starts Next.js dev server on port 3000 automatically
+        # → Runs all specs in e2e/ directory
+        # → Tests mock backend API via route interception (no port 4000 needed)
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        # Uploads even if tests fail — so you can debug failures
+        with:
+          name: playwright-report
+          path: apps/web/playwright-report/
+          retention-days: 14
+          # HTML report viewable by downloading artifact from Actions tab
+          # Shows screenshots, traces, and step-by-step execution
