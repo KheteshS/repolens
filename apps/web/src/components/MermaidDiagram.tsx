@@ -20,7 +20,12 @@ export default function MermaidDiagram({ chart }: Props) {
         startOnLoad: false,
         theme: "default",
         flowchart: {
-          curve: "rounded",
+          curve: "basis",
+          nodeSpacing: 30,
+          rankSpacing: 60,
+          padding: 15,
+          htmlLabels: true,
+          diagramPadding: 20,
         },
         themeVariables: {
           background: "#f8fafc",
@@ -48,10 +53,9 @@ export default function MermaidDiagram({ chart }: Props) {
               }
               .edgePaths path, .edgePath path, .flowchart-link {
                 stroke-dasharray: 8 4 !important;
-                stroke-width: 2px !important;
+                stroke-width: 1.5px !important;
                 stroke-linecap: round !important;
                 animation: mermaidDash 1s linear infinite !important;
-                marker-end: none !important;
               }
             </style>
           `;

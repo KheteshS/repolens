@@ -6,6 +6,11 @@ export interface FileNode {
   type: "file" | "directory";
   children?: FileNode[];
   language?: String;
+  functions?: string[];
+  exports?: string[];
+  imports?: string[];
+  classes?: string[];
+  description?: string;
 }
 
 export interface Diagrams {

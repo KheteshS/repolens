@@ -18,19 +18,20 @@ model User {
 }
 
 model Analysis {
-  id           String        @id @default(uuid())
-  userId       String?
-  user         User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
-  repoUrl      String?
-  repoName     String
-  summary      String?
-  techStack    Json          @default("[]")
-  fileTree     Json?
-  diagrams     Json?
-  status       String        @default("pending")
-  errorMessage String?
-  createdAt    DateTime      @default(now())
-  chatSessions ChatSession[]
+  id                String        @id @default(uuid())
+  userId            String?
+  user              User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  repoUrl           String?
+  repoName          String
+  summary           String?
+  architectureStyle String?
+  techStack         Json          @default("[]")
+  fileTree          Json?
+  diagrams          Json?
+  status            String        @default("pending")
+  errorMessage      String?
+  createdAt         DateTime      @default(now())
+  chatSessions      ChatSession[]
 
   @@index([userId])
   @@index([status])

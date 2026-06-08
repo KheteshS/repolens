@@ -62,6 +62,11 @@ interface FileNode {
   type: "file" | "directory";
   children?: FileNode[];
   language?: string;
+  functions?: string[];
+  exports?: string[];
+  imports?: string[];
+  classes?: string[];
+  description?: string;
 }
 
 interface Analysis {
@@ -69,6 +74,7 @@ interface Analysis {
   repoName: string;
   repoUrl?: string;
   summary: string;
+  architectureStyle?: string;
   techStack: TechStackCategories | string[];
   fileTree: FileNode;
   diagrams: {
@@ -224,21 +230,42 @@ function parseReport(summary: string): AnalysisReportData | null {
 }
 
 const KNOWN_LANGUAGES = [
-  "TypeScript", "JavaScript", "Python", "Java", "Go", "Rust", "Ruby",
-  "C#", "C++", "C", "PHP", "Swift", "Kotlin", "Dart", "Scala", "Elixir",
-  "HTML", "CSS", "SCSS", "Sass", "SQL",
+  "TypeScript",
+  "JavaScript",
+  "Python",
+  "Java",
+  "Go",
+  "Rust",
+  "Ruby",
+  "C#",
+  "C++",
+  "C",
+  "PHP",
+  "Swift",
+  "Kotlin",
+  "Dart",
+  "Scala",
+  "Elixir",
+  "HTML",
+  "CSS",
+  "SCSS",
+  "Sass",
+  "SQL",
 ];
 
 function parseTechStack(
   techStack: TechStackCategories | string[],
 ): TechStackCategories {
   if (Array.isArray(techStack)) {
-    const languages = techStack.filter((t) =>
-      KNOWN_LANGUAGES.some((l) => l.toLowerCase() === t.toLowerCase())
-    );
-    const frameworks = techStack.filter((t) =>
-      !KNOWN_LANGUAGES.some((l) => l.toLowerCase() === t.toLowerCase())
-    );
+    const isLang = (t: string) =>
+      KNOWN_LANGUAGES.some(
+        (l) =>
+          t.toLowerCase() === l.toLowerCase() ||
+          t.toLowerCase().startsWith(l.toLowerCase() + " ") ||
+          t.toLowerCase().startsWith(l.toLowerCase() + "/"),
+      );
+    const languages = techStack.filter(isLang);
+    const frameworks = techStack.filter((t) => !isLang(t));
     return {
       languages,
       frameworks,
@@ -400,7 +427,10 @@ export default function AnalysisPage() {
 
   function countFiles(node: FileNode): number {
     if (node.type === "file") return 1;
-    return (node.children || []).reduce((sum, child) => sum + countFiles(child), 0);
+    return (node.children || []).reduce(
+      (sum, child) => sum + countFiles(child),
+      0,
+    );
   }
   const totalFiles = analysis.fileTree ? countFiles(analysis.fileTree) : 0;
 
@@ -412,7 +442,7 @@ export default function AnalysisPage() {
             <QuickStats
               totalFiles={totalFiles}
               languages={techStack.languages}
-              architectureStyle={report ? "See report" : "Unknown"}
+              architectureStyle={analysis!.architectureStyle || "Unknown"}
               analyzedAt={analysis!.createdAt}
             />
             <TechStack techStack={techStack} />
@@ -507,7 +537,10 @@ export default function AnalysisPage() {
 
       case "files":
         return (
-          <div className="rounded-xl border border-slate-200 overflow-hidden h-[650px] overflow-y-auto" style={{ background: "#ffffff" }}>
+          <div
+            className="rounded-xl border border-slate-200 overflow-hidden h-[650px] overflow-y-auto"
+            style={{ background: "#ffffff" }}
+          >
             <div className="p-6">
               <FileTree node={analysis!.fileTree} />
             </div>

@@ -13,13 +13,14 @@ export default function ZoomableContainer({ children, className = "" }: Props) {
   const [scale, setScale] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   const dragStart = useRef({ x: 0, y: 0 });
   const posStart = useRef({ x: 0, y: 0 });
 
   const handleWheel = useCallback((e: React.WheelEvent) => {
     e.preventDefault();
     const delta = e.deltaY > 0 ? 0.9 : 1.1;
-    setScale((s) => Math.min(Math.max(s * delta, 0.1), 15));
+    setScale((s) => Math.min(Math.max(s * delta, 0.1), 5));
   }, []);
 
   const handleMouseDown = useCallback(
@@ -59,10 +60,21 @@ export default function ZoomableContainer({ children, className = "" }: Props) {
     setScale((s) => Math.max(s * 0.7, 0.2));
   }, []);
 
+  const toggleExpand = useCallback(() => {
+    setIsExpanded((v) => !v);
+    // Reset zoom/pan when toggling
+    setScale(1);
+    setPosition({ x: 0, y: 0 });
+  }, []);
+
+  const containerClass = isExpanded
+    ? "fixed inset-0 z-50 rounded-none border-none"
+    : `relative rounded-xl border border-slate-200 ${className}`;
+
   return (
     <div
       ref={containerRef}
-      className={`relative overflow-hidden rounded-xl border border-slate-200 ${className}`}
+      className={`overflow-hidden ${containerClass}`}
       style={{ background: "#f8fafc" }}
       onWheel={handleWheel}
       onMouseDown={handleMouseDown}
@@ -92,6 +104,13 @@ export default function ZoomableContainer({ children, className = "" }: Props) {
           title="Reset view"
         >
           Fit
+        </button>
+        <button
+          onClick={toggleExpand}
+          className="h-7 px-2 flex items-center justify-center bg-white border border-slate-200 rounded shadow-sm text-slate-500 hover:bg-slate-50 text-[10px] font-medium"
+          title={isExpanded ? "Exit fullscreen" : "Fullscreen"}
+        >
+          {isExpanded ? "✕" : "⛶"}
         </button>
       </div>
 
