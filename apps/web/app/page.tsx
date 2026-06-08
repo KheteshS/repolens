@@ -6,14 +6,23 @@ import { useSession, signIn, signOut } from "next-auth/react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { apiUrl } from "@/lib/api";
 
 type RepoVisibility = "unknown" | "checking" | "public" | "private";
 
 function extractOwnerRepo(url: string): string | null {
   const match = url.match(/github\.com\/([^/]+\/[^/]+)/);
   if (!match) return null;
-  return match[1].replace(/\.git$/, "");
+  const ownerRepo = match[1];
+  if (!ownerRepo) return null;
+  return ownerRepo.replace(/\.git$/, "");
 }
 
 export default function Page() {
@@ -67,7 +76,9 @@ export default function Page() {
       checkRepoVisibility(repoUrl);
     }, 600);
 
-    return () => { if (checkTimeout.current) clearTimeout(checkTimeout.current); };
+    return () => {
+      if (checkTimeout.current) clearTimeout(checkTimeout.current);
+    };
   }, [repoUrl, checkRepoVisibility]);
 
   const hasGithubToken = !!session?.user?.githubAccessToken;
@@ -88,7 +99,7 @@ export default function Page() {
     setShowPrivatePrompt(false);
     setUrlLoading(true);
     try {
-      const res = await fetch("http://localhost:4000/api/analyze/url", {
+      const res = await fetch(apiUrl("/api/analyze/url"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -99,7 +110,9 @@ export default function Page() {
       });
       const contentType = res.headers.get("content-type") || "";
       if (!contentType.includes("application/json")) {
-        throw new Error("Backend unavailable — make sure the API server is running on port 4000");
+        throw new Error(
+          "Backend unavailable — check NEXT_PUBLIC_API_URL and API service status",
+        );
       }
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to start analysis");
@@ -127,13 +140,15 @@ export default function Page() {
       const form = new FormData();
       form.append("file", file);
       if (session?.user?.email) form.append("userEmail", session.user.email);
-      const res = await fetch("http://localhost:4000/api/analyze/zip", {
+      const res = await fetch(apiUrl("/api/analyze/zip"), {
         method: "POST",
         body: form,
       });
       const contentType = res.headers.get("content-type") || "";
       if (!contentType.includes("application/json")) {
-        throw new Error("Backend unavailable — make sure the API server is running on port 4000");
+        throw new Error(
+          "Backend unavailable — check NEXT_PUBLIC_API_URL and API service status",
+        );
       }
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to start analysis");
@@ -152,19 +167,33 @@ export default function Page() {
         {session?.user ? (
           <div className="flex items-center gap-3">
             <Link href="/dashboard">
-              <Button variant="ghost" size="sm">Dashboard</Button>
+              <Button variant="ghost" size="sm">
+                Dashboard
+              </Button>
             </Link>
             {session.user.image && (
-              <img src={session.user.image} alt="" className="w-8 h-8 rounded-full" />
+              <img
+                src={session.user.image}
+                alt=""
+                className="w-8 h-8 rounded-full"
+              />
             )}
-            <span className="text-sm text-muted-foreground">{session.user.name}</span>
-            <Button variant="ghost" size="sm" onClick={() => signOut({ callbackUrl: "/" })}>
+            <span className="text-sm text-muted-foreground">
+              {session.user.name}
+            </span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => signOut({ callbackUrl: "/" })}
+            >
               Sign out
             </Button>
           </div>
         ) : (
           <Link href="/login">
-            <Button variant="outline" size="sm">Sign in</Button>
+            <Button variant="outline" size="sm">
+              Sign in
+            </Button>
           </Link>
         )}
       </nav>
@@ -176,18 +205,31 @@ export default function Page() {
       <div className="text-center max-w-2xl flex flex-col gap-4">
         <div className="flex items-center justify-center gap-3 mb-2">
           <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
-            <svg className="w-5 h-5 text-primary-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+            <svg
+              className="w-5 h-5 text-primary-foreground"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
+              />
             </svg>
           </div>
           <span className="text-2xl font-bold tracking-tight">RepoLens</span>
         </div>
         <h1 className="text-5xl font-bold tracking-tight leading-tight">
-          Understand any codebase<br />
+          Understand any codebase
+          <br />
           <span className="text-primary">in minutes</span>
         </h1>
         <p className="text-muted-foreground text-lg">
-          Paste a GitHub URL or upload a ZIP — RepoLens generates dependency graphs, call graphs, architecture diagrams, and an AI assistant that knows your entire repo.
+          Paste a GitHub URL or upload a ZIP — RepoLens generates dependency
+          graphs, call graphs, architecture diagrams, and an AI assistant that
+          knows your entire repo.
         </p>
       </div>
 
@@ -202,7 +244,9 @@ export default function Page() {
               </svg>
               Analyze GitHub Repository
             </CardTitle>
-            <CardDescription>Public repos work instantly. Private repos need a GitHub token.</CardDescription>
+            <CardDescription>
+              Public repos work instantly. Private repos need a GitHub token.
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleUrlSubmit} className="flex gap-2">
@@ -210,19 +254,28 @@ export default function Page() {
                 <Input
                   placeholder="https://github.com/owner/repo"
                   value={repoUrl}
-                  onChange={(e) => { setRepoUrl(e.target.value); setShowPrivatePrompt(false); }}
+                  onChange={(e) => {
+                    setRepoUrl(e.target.value);
+                    setShowPrivatePrompt(false);
+                  }}
                   disabled={urlLoading}
                   className="pr-24"
                 />
                 {visibility !== "unknown" && (
-                  <span className={`absolute right-2 top-1/2 -translate-y-1/2 text-xs px-2 py-0.5 rounded-full font-medium ${
-                    visibility === "checking"
-                      ? "bg-muted text-muted-foreground"
+                  <span
+                    className={`absolute right-2 top-1/2 -translate-y-1/2 text-xs px-2 py-0.5 rounded-full font-medium ${
+                      visibility === "checking"
+                        ? "bg-muted text-muted-foreground"
+                        : visibility === "public"
+                          ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                          : "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400"
+                    }`}
+                  >
+                    {visibility === "checking"
+                      ? "Checking…"
                       : visibility === "public"
-                        ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                        : "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400"
-                  }`}>
-                    {visibility === "checking" ? "Checking…" : visibility === "public" ? "Public" : "Private 🔒"}
+                        ? "Public"
+                        : "Private 🔒"}
                   </span>
                 )}
               </div>
@@ -239,9 +292,15 @@ export default function Page() {
                 <div className="flex gap-2">
                   <Button
                     size="sm"
-                    onClick={() => signIn("github", { callbackUrl: window.location.href })}
+                    onClick={() =>
+                      signIn("github", { callbackUrl: window.location.href })
+                    }
                   >
-                    <svg className="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 24 24">
+                    <svg
+                      className="w-4 h-4 mr-1.5"
+                      fill="currentColor"
+                      viewBox="0 0 24 24"
+                    >
                       <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
                     </svg>
                     Sign in with GitHub
@@ -259,14 +318,27 @@ export default function Page() {
 
             {visibility === "private" && hasGithubToken && (
               <p className="text-xs text-green-600 dark:text-green-400 mt-2 flex items-center gap-1">
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                <svg
+                  className="w-3.5 h-3.5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
                 </svg>
-                You have GitHub access — private repo will be analyzed with your token
+                You have GitHub access — private repo will be analyzed with your
+                token
               </p>
             )}
 
-            {urlError && <p className="text-destructive text-sm mt-2">{urlError}</p>}
+            {urlError && (
+              <p className="text-destructive text-sm mt-2">{urlError}</p>
+            )}
           </CardContent>
         </Card>
 
@@ -280,12 +352,24 @@ export default function Page() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                />
               </svg>
               Upload ZIP Archive
             </CardTitle>
-            <CardDescription>Upload a .zip of your project. Max 100MB.</CardDescription>
+            <CardDescription>
+              Upload a .zip of your project. Max 100MB.
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <input
@@ -304,15 +388,27 @@ export default function Page() {
             >
               {zipLoading ? "Uploading…" : "Choose ZIP file"}
             </Button>
-            {zipError && <p className="text-destructive text-sm mt-2">{zipError}</p>}
+            {zipError && (
+              <p className="text-destructive text-sm mt-2">{zipError}</p>
+            )}
           </CardContent>
         </Card>
       </div>
 
       {/* Feature pills */}
       <div className="flex flex-wrap gap-2 justify-center text-sm">
-        {["Dependency graphs", "Call graphs", "Architecture diagrams", "AI chat assistant", "7 languages", "Streaming responses"].map((f) => (
-          <span key={f} className="px-3 py-1 rounded-full border border-border bg-card text-muted-foreground">
+        {[
+          "Dependency graphs",
+          "Call graphs",
+          "Architecture diagrams",
+          "AI chat assistant",
+          "7 languages",
+          "Streaming responses",
+        ].map((f) => (
+          <span
+            key={f}
+            className="px-3 py-1 rounded-full border border-border bg-card text-muted-foreground"
+          >
             {f}
           </span>
         ))}

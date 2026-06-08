@@ -43,13 +43,13 @@ export default function TechStack({ techStack }: Props) {
             {CATEGORY_LABELS[category] ?? category}
           </span>
           <div className="flex flex-wrap gap-1.5">
-            {items.map((item) => (
+            {items.map((item: string) => (
               <Badge
-                key={item}
+                key={String(item)}
                 variant="outline"
                 className={`text-xs ${CATEGORY_COLORS[category] ?? ""}`}
               >
-                {item}
+                {String(item)}
               </Badge>
             ))}
           </div>

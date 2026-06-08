@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { Send, Sparkles, X, Loader2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { wsUrl } from "@/lib/api";
 
 interface Message {
   id: string;
@@ -26,7 +27,7 @@ export default function ChatPanel({ analysisId }: Props) {
 
   // Connect WebSocket on mount
   useEffect(() => {
-    const ws = new WebSocket("ws://localhost:4000/ws/chat");
+    const ws = new WebSocket(wsUrl("/ws/chat"));
     wsRef.current = ws;
 
     ws.onmessage = (event) => {
@@ -48,7 +49,10 @@ export default function ChatPanel({ analysisId }: Props) {
             const updated = [...prev];
             const last = updated[updated.length - 1];
             if (last && last.role === "assistant") {
-              updated[updated.length - 1] = { ...last, content: streamingContent.current };
+              updated[updated.length - 1] = {
+                ...last,
+                content: streamingContent.current,
+              };
             }
             return updated;
           });
@@ -62,7 +66,11 @@ export default function ChatPanel({ analysisId }: Props) {
           setIsStreaming(false);
           setMessages((prev) => [
             ...prev,
-            { id: Date.now().toString(), role: "assistant", content: `Error: ${data.content}` },
+            {
+              id: Date.now().toString(),
+              role: "assistant",
+              content: `Error: ${data.content}`,
+            },
           ]);
           break;
       }
@@ -71,7 +79,7 @@ export default function ChatPanel({ analysisId }: Props) {
     ws.onclose = () => {
       setTimeout(() => {
         if (wsRef.current?.readyState === WebSocket.CLOSED) {
-          wsRef.current = new WebSocket("ws://localhost:4000/ws/chat");
+          wsRef.current = new WebSocket(wsUrl("/ws/chat"));
         }
       }, 3000);
     };
@@ -91,11 +99,14 @@ export default function ChatPanel({ analysisId }: Props) {
     if (input.trim() === "" || isStreaming) return;
 
     const userMessage = input.trim();
-    setMessages((prev) => [...prev, { id: Date.now().toString(), role: "user", content: userMessage }]);
+    setMessages((prev) => [
+      ...prev,
+      { id: Date.now().toString(), role: "user", content: userMessage },
+    ]);
     setInput("");
 
     wsRef.current?.send(
-      JSON.stringify({ type: "message", analysisId, content: userMessage })
+      JSON.stringify({ type: "message", analysisId, content: userMessage }),
     );
   };
 
@@ -110,7 +121,9 @@ export default function ChatPanel({ analysisId }: Props) {
         <div className="flex items-center space-x-2">
           <Sparkles className="text-indigo-300 h-5 w-5" />
           <h2 className="text-white font-medium">AI Assistant</h2>
-          <span className="text-indigo-300/60 text-xs">— knows your entire codebase</span>
+          <span className="text-indigo-300/60 text-xs">
+            — knows your entire codebase
+          </span>
         </div>
         <button
           onClick={clearChat}
@@ -126,7 +139,9 @@ export default function ChatPanel({ analysisId }: Props) {
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center">
             <Sparkles className="h-12 w-12 text-indigo-400 mb-4" />
-            <h3 className="text-indigo-200 text-xl mb-2">Ask about this codebase</h3>
+            <h3 className="text-indigo-200 text-xl mb-2">
+              Ask about this codebase
+            </h3>
             <p className="text-slate-400 text-sm max-w-xs mb-6">
               I have full context of the repository. Ask me anything!
             </p>
@@ -139,7 +154,9 @@ export default function ChatPanel({ analysisId }: Props) {
               ].map((q) => (
                 <button
                   key={q}
-                  onClick={() => { setInput(q); }}
+                  onClick={() => {
+                    setInput(q);
+                  }}
                   className="text-xs px-3 py-1.5 rounded-full border border-indigo-500/30 text-indigo-300 hover:bg-indigo-500/20 transition-colors"
                 >
                   {q}
@@ -178,8 +195,14 @@ export default function ChatPanel({ analysisId }: Props) {
                 <div className="max-w-[80%] p-3 rounded-2xl bg-slate-700/60 text-slate-100 rounded-tl-none border border-slate-600/50">
                   <div className="flex items-center space-x-2">
                     <div className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse"></div>
-                    <div className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse" style={{ animationDelay: "0.2s" }}></div>
-                    <div className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse" style={{ animationDelay: "0.4s" }}></div>
+                    <div
+                      className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse"
+                      style={{ animationDelay: "0.2s" }}
+                    ></div>
+                    <div
+                      className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse"
+                      style={{ animationDelay: "0.4s" }}
+                    ></div>
                   </div>
                 </div>
               </div>

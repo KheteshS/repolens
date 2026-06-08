@@ -13,6 +13,7 @@ import FileTree from "@/components/FileTree";
 import MermaidDiagram from "@/components/MermaidDiagram";
 import ZoomableContainer from "@/components/ZoomableContainer";
 import ChatPanel from "@/components/ChatPanel";
+import { apiUrl } from "@/lib/api";
 
 interface TechStackCategories {
   languages: string[];
@@ -291,7 +292,7 @@ export default function AnalysisPage() {
   useEffect(() => {
     if (!jobId) {
       // Loaded from history — fetch completed analysis directly
-      fetch(`http://localhost:4000/api/results/${id}`)
+      fetch(apiUrl(`/api/results/${id}`))
         .then((res) => res.json())
         .then((data) => {
           if (data.status === "completed") {
@@ -308,13 +309,13 @@ export default function AnalysisPage() {
 
     async function poll() {
       try {
-        const res = await fetch(`http://localhost:4000/api/status/${jobId}`);
+        const res = await fetch(apiUrl(`/api/status/${jobId}`));
         const data: JobStatus = await res.json();
         setJob(data);
 
         if (data.state === "completed") {
           clearInterval(pollRef.current!);
-          const r = await fetch(`http://localhost:4000/api/results/${id}`);
+          const r = await fetch(apiUrl(`/api/results/${id}`));
           const a: Analysis = await r.json();
           setAnalysis(a);
         } else if (data.state === "failed") {

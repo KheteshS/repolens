@@ -15,7 +15,7 @@ export default function QuickStats({
 }: Props) {
   // Show only the style name (before the colon), not the full justification
   const styleName = architectureStyle.includes(":")
-    ? architectureStyle.split(":")[0].trim()
+    ? (architectureStyle.split(":")[0] ?? architectureStyle).trim()
     : architectureStyle;
 
   const stats = [

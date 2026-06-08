@@ -32,7 +32,7 @@ export const authOptions: NextAuthOptions = {
     },
     async session({ session, token }) {
       if (session.user) {
-        session.user.id = token.sub;
+        session.user.id = token.sub ?? "";
         session.user.provider = token.provider;
         if (token.githubAccessToken) {
           session.user.githubAccessToken = token.githubAccessToken as string;

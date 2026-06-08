@@ -10,7 +10,7 @@ const app = express();
 
 app.use(
   cors({
-    origin: process.env.NEXT_AUTH_URL || "http://localhost:3000",
+    origin: process.env.NEXTAUTH_URL || "http://localhost:3000",
     credentials: true,
   }),
 );
